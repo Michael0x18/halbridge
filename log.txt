@@ -1,0 +1,7 @@
+Finished navigating connection
+NOTICE AUTH :*** Processing connection to irc.choopa.net
+
+NOTICE AUTH :*** Looking up your hostname...
+NOTICE AUTH :*** Checking Ident
+NOTICE AUTH :*** Couldn't look up your hostname
+

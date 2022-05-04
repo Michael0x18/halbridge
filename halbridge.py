@@ -8,12 +8,12 @@ import socket
 ################CONFIGURATION################
 
 #The server to connect to
-HOST = "irc.efnet.org"
+HOST = "irc.choopa.net"
 #Port to use
 PORT = 6667
 
 #Bot's nickname
-NICK = "hal"
+NICK = "hal9k"
 #Ident
 IDENT = "Michael__"
 #It's a bad joke
@@ -28,7 +28,7 @@ readbuffer = ""
 s=socket.socket()
 
 #For logging to.
-log=open("log.txt","w");
+#log=open("log.txt","w");
 #Context: dict of lists
 last_messages=dict();
 #Number of messages to save, per channel
@@ -40,10 +40,12 @@ last_messages_size=16;
 s.connect((HOST, PORT))
 s.send(bytes("NICK %s\n" % NICK, "UTF-8"))
 s.send(bytes("USER %s %s join :%s\n" % (IDENT, HOST, REALNAME), "UTF-8"))
-for CHANNEL in CHANNELS:
-    s.send(bytes("JOIN %s\n" % (CHANNEL), "UTF-8"));
-    last_messages[CHANNEL]=list()
-s.send(bytes("PRIVMSG %s :Bot activated\n" % MASTER, "UTF-8"))
+initial_sync = False
+def initial_setup():
+    for CHANNEL in CHANNELS:
+        s.send(bytes("JOIN %s\n" % (CHANNEL), "UTF-8"));
+        last_messages[CHANNEL]=list()
+    s.send(bytes("PRIVMSG %s :Bot activated\n" % MASTER, "UTF-8"))
 ##INITIAL CONNECTION##
 
 print("Finished navigating connection")
@@ -52,9 +54,6 @@ print("Finished navigating connection")
 def send_message(s,target,message):
     s.send(bytes("PRIVMSG %s :%s \n" % (target, message),"UTF-8"))
     print("(%s): %s: %s" % (target,NICK,message))
-    log.write("(%s): %s: %s" % (target,NICK,message));
-    log.write("\n");
-    log.flush();
 
 def send_message_nolog(s,target,message):
     s.send(bytes("PRIVMSG %s :%s \n" % (target, message),"UTF-8"))
@@ -77,9 +76,6 @@ chans=dict();
 #Handles a message sent in a channel (not privately)
 def handle_message(s,channel,sender, message):
     print("(%s): %s: %s" % (channel,sender,message));
-    log.write("(%s): %s: %s" % (channel,sender,message));
-    log.write("\n")
-    log.flush();
     #First, go around and forward it to people on the channel
     for name in names:
         if(chans[name]==channel):
@@ -160,6 +156,7 @@ def handle_pm(s,sender,message):
 while 1:
     #Read the buffer and assume UTF-8
     readbuffer = readbuffer+s.recv(1024).decode("UTF-8")
+    print(readbuffer)
     #Split into lines
     temp = str.split(readbuffer, "\n")
     #Stick the last (incomplete) line into the buffer again
@@ -168,6 +165,10 @@ while 1:
     for linestr in temp:
         #Strip trailing stuff
         linestr = str.rstrip(linestr)
+        if(linestr.endswith("End of /MOTD command.")):
+            if(initial_sync==False):
+                initial_setup()
+                initial_sync=True
         #Tokenize
         line = str.split(linestr)
         if(line[0] == "PING"):
